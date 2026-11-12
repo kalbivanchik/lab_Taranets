@@ -1,125 +1,144 @@
-#По заданию room, старт - "hall"
-room = "hall"
-#По заданию переменная clues = 0
-clues = 0
-#По заданию флаг has_key = False
-has_key = False
-#Техническая переменная для управления циклом игры
-game_running = True
-#Изначально улики не найдены(False). Это защитит от повторного счета
-clues_library_found = False
-clues_study_found = False
-clues_bedroom_found = False
-clues_basement_found = False
-clues_attic_found = False
-#По заданию Приветствие и цель
-print("ДОБРО ПОЖАЛОВАТЬ В ТАИНСТВЕННЫЙ ОСОБНЯК")
-print("ЦЕЛЬ:СОБЕРИТЕ УЛИКИ, НАЙДИТЕ КЛЮЧ И ПОКИНЬТЕ ОСОБНЯК")
+#ГЛАВНЫЙ МОДУЛЬ ИГРЫ
+#Здесь цикл, обработка команд и обёртки над функциями модуля mansion.
 
-while game_running:
-    #Показываем игроку где он находится
-    print(f"\n ВЫ НАХОДИТЕСЬ В КОМНАТЕ {room}")
-    #Считываем комманды,убираем пробелы и приводим к нижнему регистру
-    command = input("ВВЕДИТЕ КОМАНДУ : help, look, go, take, use, clues, exit ").strip().lower()
-    #Блок обработки команды help
-    if command == "help":
-        print("Доступные команды")
-        print(" help - показать это сообщение")
-        print(" rooms digit - показать комнаты куда можно пойти")
-        print(" look - осмотреть комнату")
-        print(" go [комната] - перейти в другую комнату")
-        print(" take [предмет] - взять предмет")
-        print(" use [предмет] - использовать предмет")
-        print(" clues - показать кол-во собранных улик")
-        print(" exit - покинуть игру")
-        print(" to exit - выйти из особняка(если есть ключ и находитесь в комнате 'exit)")
+#Импортируем random для установки seed
+import random
+#Импортируем наш единственный модуль с данными и правилами
+import mansion
 
-    #Блок обработки команды rooms digit(список всех доступных комнат)
-    elif command == "rooms digit":
-           print("доступные комнаты - hall, study, attic, bedroom, basement, exit, library")
+#Устанавливаем seed из mansion.SEED_VALUE, чтобы случайные события были воспроизводимы.
+random.seed(mansion.SEED_VALUE)
 
-    #Блок обработки команды exit(выход из игры)
-    elif command == "exit":
-        game_running = False
-    #Блок обработки команды look
-    elif command == "look":
-        print(f"Вы осматриваете {room}...")
-        #Если мы в комнате и улика там еще не была найдена:
-        if room == "library" and clues_library_found == False:
-            clues += 1
-            clues_library_found = True#Меняем флаг на True чтобы больше не считать
-            print("Вы нашли улику! Счетчик улик увеличен.")
-        elif room == "study" and clues_study_found == False:
-            clues += 1
-            clues_study_found = True
-            print("Вы нашли улику! Счетчик улик увеличен")
-        elif room == "bedroom" and clues_bedroom_found == False:
-                    clues += 1
-                    clues_bedroom_found = True
-                    print("Вы нашли улику! Счетчик улик увеличен")
-        elif room == "basement" and clues_basement_found == False:
-                    clues += 1
-                    clues_basement_found = True
-                    print("Вы нашли улику! Счетчик улик увеличен")
-        elif room == "attic" and clues_attic_found == False:
-                    clues += 1
-                    clues_attic_found = True
-                    print("Вы нашли улику! Счетчик улик увеличен")
-        #Если ни одно условие выше не выполнилось, значит либо здесь нет улик, либо мы их уже забрали
-        else:
-               print("Здесь больше нет ничего интересного.")
-        #Подсказки для игрока
-        if room == "study":
-               print("Вы видете ключ на столе.(Используйте 'take key')")
-        elif room == "exit":
-               print("Это выход из особняка.")
-        else:
-               print("Комната выглядит обычно.")
-    #Блок обработки команды go
-    elif command.startswith("go"):
-           parts = command.split()#Разбиваем строку "go hall" на список ["go", "hall"]
-           if len(parts) < 2:
-                  print("Куда идти? Укажите комнату: go [название]")
-           else:
-                  target = parts[1]#Берем название комнаты
-                  #Проверяем существует ли такая кмоната
-                  #Здесь использование or заменяет проверку массива
-                  if target == "hall" or target == "library" or target == "study" or target == "bedroom" or target == "basement" or target == "attic" or target == "exit":
-                         room = target#Меняем текущую локацию
-                         print(f"Вы перешли в {room}")
-                  else:
-                         print("Такой комнаты нет.")
-    #Блок обработки команды take
-    elif command == "take key":
-           #Так как ключ можно взять только в комнате study
-           if room == "study":
-                  if not has_key:
-                         has_key = True
-                         print("Вы взяли ключ!")
-                  else:
-                         print("Ключ уже у вас.")
-           else:
-                  print("Здесь нет ключа.")
-    #Блок обработки кмоанды use
-    elif command == "use key":
-           if room == 'exit':
-                  if has_key:
-                         print("Вы используете ключ и открываете дверь...")
-                  else:
-                         print("Здесь нечего открывать ключом.")
-    #Блок обработки команды clues
-    elif command == 'clues':
-           print(f"Собрано улик: {clues}")
-    #Блок обработки команды to exit
-    elif command == 'to exit':
-        #Победа: у exit при has_key == True
-           if room == "exit" and has_key:
-                  print("\nПоздравляем! Вы нашли ключ, собрали улики и выбрались из особняка!")
-                  game_running = False
-           elif room == "exit" and not has_key:
-                  print("Дверь заперта. Необходимо найти ключ.")
-           else:
-                  print("Чтобы выйти из игры, вы должны находиться в комнате 'exit' с ключом")
-    #Блок обработки неизвсетных команд
+
+def show_help():
+    print("-" * 45)
+    print("Доступные команды:")
+    print("  help              - показать это сообщение")
+    print("  look              - осмотреть комнату (шанс найти улику)")
+    print("  go <направление>  - перейти (north/south/east/west)")
+    print("  door              - войти в дверь (только в кабинете)")
+    print("  take key          - взять ключ (только в кабинете)")
+    print("  clues             - показать количество улик")
+    print("  exit              - попытаться выйти из особняка")
+    print("-" * 45)
+
+
+def describe():
+    #Передаём текущую комнату в mansion.describe и печатаем результат
+    print(mansion.describe(mansion.room))
+
+
+def move(direction):
+    #Вызываем mansion.move, передавая текущую комнату и направление
+    new_room = mansion.move(mansion.room, direction)
+
+    #Если комната не изменилась — ход невозможен, выходим из функции
+    if new_room == mansion.room:
+        print("Туда идти нельзя (нет выхода в этом направлении).")
+        return
+
+    #Если комната изменилась — обновляем переменную room В МОДУЛЕ mansion
+    mansion.room = new_room
+    print(f"Вы перешли в: {mansion.room}.")
+
+    #Разыгрываем случайное событие через mansion.random_event()
+    event = mansion.random_event()
+    print(f"Событие: {event}")
+
+    #Если событие — "найденное письмо", добавляем улику в счётчик mansion.clues
+    if "найденное письмо" in event:
+        mansion.clues += 1
+        print("Вы подобрали письмо! (+1 улика)")
+
+
+def handle_look():
+    describe()  #Сначала печатаем описание комнаты
+    #Бросаем число от 1 до 3 — шанс найти улику
+    chance = random.randint(1, 3)
+
+    #Если выпало 1 — находим случайную улику через mansion.random_clue()
+    if chance == 1:
+        clue_name = mansion.random_clue()  #Получаем название улики
+        mansion.clues += 1  #Увеличиваем счётчик в mansion
+        print(f"Вы нашли улику: {clue_name}! (+1 улика)")
     else:
-           print("Неизвестная команда. Введите 'help' для списка комманд.")
+        print("Вы ничего нового не обнаружили.")
+
+
+def handle_take_key():
+    #Проверяем комнату через mansion.room
+    if mansion.room == "study":
+        #Проверяем флаг has_key в mansion
+        if mansion.has_key == False:
+            mansion.has_key = True  #Ставим флаг
+            print("Вы взяли ключ из ящика стола!")
+        else:
+            print("Ключ уже у вас.")
+    else:
+        print("Здесь нет ключа.")
+
+
+def handle_exit():
+    #Проверяем оба условия (мы в exit И есть ключ)
+    if mansion.room == "exit" and mansion.has_key == True:
+        print("\nВы вставили ключ в замок, дверь со скрипом открылась...")
+        print("Вы выбрались из особняка! Победа!")
+        mansion.game_running = False  #Останавливаем игру
+    elif mansion.room == "exit" and mansion.has_key == False:
+        print("Дверь заперта! Нужен ключ.")
+    else:
+        print("Здесь нет выхода. Выход находится за дверью в кабинете (команда 'door').")
+
+#БЛОК ЗАПУСКА
+print("Добро пожаловать в Таинственный особняк!")
+print("Цель: соберите улики, найдите ключ и выйдите.")
+print("Введите 'help' для списка команд.")
+
+#Главный цикл. Крутится, пока mansion.game_running == True
+while mansion.game_running:
+    #Показываем текущую комнату (берём из mansion.room)
+    print(f"\n[Комната: {mansion.room}]")
+
+    #Получаем команду: strip — убрать пробелы, lower — привести к нижнему регистру
+    user_input = input("> ").strip().lower()
+
+    #Пустая строка — пропускаем итерацию
+    if user_input == "":
+        continue
+
+    #help — вызвать функцию show_help()
+    elif user_input == "help":
+        show_help()
+
+    #look — осмотр комнаты
+    elif user_input == "look":
+        handle_look()
+
+    #go <направление>: проверяем, что строка начинается с "go "
+    elif user_input.startswith("go "):
+        #Отрезаем "go " срезом [3:] и убираем лишние пробелы (без .split(), чтобы не создавать список)
+        direction = user_input[3:].strip()
+        move(direction)  #Передаём направление в функцию move
+
+    #door — переход из кабинета в комнату exit
+    elif user_input == "door":
+        if mansion.room == "study":
+            move("door")  #Используем move с направлением "door"
+        else:
+            print("Здесь нет двери.")
+
+    #take key — взять ключ
+    elif user_input == "take key":
+        handle_take_key()
+
+    #clues — вывести счётчик улик из mansion
+    elif user_input == "clues":
+        print(f"Собрано улик: {mansion.clues}")
+
+    #exit — попытка выхода
+    elif user_input == "exit":
+        handle_exit()
+
+    #Любая другая команда
+    else:
+        print("Неизвестная команда. Введите 'help'.")
