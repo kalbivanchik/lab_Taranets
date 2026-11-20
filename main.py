@@ -1,144 +1,136 @@
 #ГЛАВНЫЙ МОДУЛЬ ИГРЫ
-#Здесь цикл, обработка команд и обёртки над функциями модуля mansion.
-
-#Импортируем random для установки seed
 import random
-#Импортируем наш единственный модуль с данными и правилами
 import mansion
-
-#Устанавливаем seed из mansion.SEED_VALUE, чтобы случайные события были воспроизводимы.
-random.seed(mansion.SEED_VALUE)
-
-
+from mansion import has_key
+#Инициализация начального состояния
+#Списки и множества в mansion.py уже созданы при импорте
+current_room = "hall"
+game_running = True
 def show_help():
+    #Функция show_help() — выводит список команд
     print("-" * 45)
     print("Доступные команды:")
     print("  help              - показать это сообщение")
-    print("  look              - осмотреть комнату (шанс найти улику)")
+    print("  look              - осмотреть комнату")
     print("  go <направление>  - перейти (north/south/east/west)")
-    print("  door              - войти в дверь (только в кабинете)")
-    print("  take key          - взять ключ (только в кабинете)")
+    print("  door              - войти в дверь (в кабинете)")
+    print("  take key          - взять ключ (в кабинете)")
     print("  clues             - показать количество улик")
+    print("  long clues        - показать улики длиннее 5 символов (генератор)")
+    print("  format clues      - показать красиво отформатированные улики (генератор)")
     print("  exit              - попытаться выйти из особняка")
     print("-" * 45)
 
 
-def describe():
-    #Передаём текущую комнату в mansion.describe и печатаем результат
-    print(mansion.describe(mansion.room))
+def handle_look():
+    #Функция осмотра
+    #Получаем описание из mansion
+    print(mansion.describe(current_room))
+    #Если комнату еще не осматривали (её нет в множестве visited_rooms)
+    if current_room not in mansion.visited_rooms:
+        #Добавляем комнату в множество
+        mansion.visited_rooms.add(current_room)
+        #Шанс найти улику
+        if random.randint(1, 10) == 1:
+            #Получаем случайную улику
+            c = mansion.random_clue()
+            #Добавляем её через обязательную функцию add_clue
+            mansion.add_clue(mansion.clues, c)
+            print(f"Вы нашли улику: {c}! (+1 улика)")
+        else:
+            print("Вы ничего нового не обнаружили")
+    else:
+        print("Вы уже осматривали эту комнату")
 
 
-def move(direction):
-    #Вызываем mansion.move, передавая текущую комнату и направление
-    new_room = mansion.move(mansion.room, direction)
-
-    #Если комната не изменилась — ход невозможен, выходим из функции
-    if new_room == mansion.room:
-        print("Туда идти нельзя (нет выхода в этом направлении).")
+def handle_move(direction):
+    #Функция перемещения
+    global current_room
+    global has_key  #Нужен глобальный доступ, если мы меняем ключ, но здесь мы его не меняем
+    #Получаем новую комнату через функцию move
+    new_room = mansion.move(current_room, direction)
+    #Если комната не изменилась
+    if new_room == current_room:
+        print("Туда идти нельзя")
         return
-
-    #Если комната изменилась — обновляем переменную room В МОДУЛЕ mansion
-    mansion.room = new_room
-    print(f"Вы перешли в: {mansion.room}.")
-
-    #Разыгрываем случайное событие через mansion.random_event()
+    #Обновляем текущую комнату
+    current_room = new_room
+    print(f"Вы перешли в: {current_room}")
+    #Случайное событие
     event = mansion.random_event()
     print(f"Событие: {event}")
-
-    #Если событие — "найденное письмо", добавляем улику в счётчик mansion.clues
-    if "найденное письмо" in event:
-        mansion.clues += 1
+    #Если событие - письмо, добавляем улику
+    if "письмо" in event:
+        mansion.add_clue(mansion.clues, "найденное письмо")
         print("Вы подобрали письмо! (+1 улика)")
 
 
-def handle_look():
-    describe()  #Сначала печатаем описание комнаты
-    #Бросаем число от 1 до 3 — шанс найти улику
-    chance = random.randint(1, 3)
-
-    #Если выпало 1 — находим случайную улику через mansion.random_clue()
-    if chance == 1:
-        clue_name = mansion.random_clue()  #Получаем название улики
-        mansion.clues += 1  #Увеличиваем счётчик в mansion
-        print(f"Вы нашли улику: {clue_name}! (+1 улика)")
-    else:
-        print("Вы ничего нового не обнаружили.")
-
-
-def handle_take_key():
-    #Проверяем комнату через mansion.room
-    if mansion.room == "study":
-        #Проверяем флаг has_key в mansion
-        if mansion.has_key == False:
-            mansion.has_key = True  #Ставим флаг
+def handle_take_key(has_key):
+    #Взятие ключа
+    if current_room == "study":
+        if not has_key:
             print("Вы взяли ключ из ящика стола!")
+            return True
         else:
-            print("Ключ уже у вас.")
+            print("Ключ уже у вас")
+            return True
     else:
-        print("Здесь нет ключа.")
+        print("Здесь нет ключа")
+        return False
+
+
 
 
 def handle_exit():
-    #Проверяем оба условия (мы в exit И есть ключ)
-    if mansion.room == "exit" and mansion.has_key == True:
+    #Проверка выхода
+    global game_running
+    if current_room == "exit" and has_key:
         print("\nВы вставили ключ в замок, дверь со скрипом открылась...")
         print("Вы выбрались из особняка! Победа!")
-        mansion.game_running = False  #Останавливаем игру
-    elif mansion.room == "exit" and mansion.has_key == False:
+        game_running = False
+    elif current_room == "exit" and not has_key:
         print("Дверь заперта! Нужен ключ.")
     else:
-        print("Здесь нет выхода. Выход находится за дверью в кабинете (команда 'door').")
+        print("Здесь нет выхода. Выход за дверью в кабинете")
 
-#БЛОК ЗАПУСКА
+
+#ЗАПУСК ИГРЫ
 print("Добро пожаловать в Таинственный особняк!")
-print("Цель: соберите улики, найдите ключ и выйдите.")
-print("Введите 'help' для списка команд.")
-
-#Главный цикл. Крутится, пока mansion.game_running == True
-while mansion.game_running:
-    #Показываем текущую комнату (берём из mansion.room)
-    print(f"\n[Комната: {mansion.room}]")
-
-    #Получаем команду: strip — убрать пробелы, lower — привести к нижнему регистру
+print("Введите 'help' для списка команд")
+while game_running:
+    print(f"\n[Комната: {current_room}]")
     user_input = input("> ").strip().lower()
-
-    #Пустая строка — пропускаем итерацию
     if user_input == "":
         continue
-
-    #help — вызвать функцию show_help()
     elif user_input == "help":
         show_help()
-
-    #look — осмотр комнаты
     elif user_input == "look":
         handle_look()
-
-    #go <направление>: проверяем, что строка начинается с "go "
     elif user_input.startswith("go "):
-        #Отрезаем "go " срезом [3:] и убираем лишние пробелы (без .split(), чтобы не создавать список)
         direction = user_input[3:].strip()
-        move(direction)  #Передаём направление в функцию move
-
-    #door — переход из кабинета в комнату exit
+        handle_move(direction)
     elif user_input == "door":
-        if mansion.room == "study":
-            move("door")  #Используем move с направлением "door"
+        if current_room == "study":
+            handle_move("door")
         else:
-            print("Здесь нет двери.")
-
-    #take key — взять ключ
+            print("Здесь нет двери")
     elif user_input == "take key":
-        handle_take_key()
+        has_key = handle_take_key(has_key)
 
-    #clues — вывести счётчик улик из mansion
+        #ИСПОЛЬЗОВАНИЕ ГЕНЕРАТОРОВ
     elif user_input == "clues":
-        print(f"Собрано улик: {mansion.clues}")
-
-    #exit — попытка выхода
+        #Выводим количество через функцию count_clues
+        print(f"Всего улик: {mansion.count_clues(mansion.clues)}")
+        print(f"Содержимое: {mansion.clues}")
+    elif user_input == "long clues":
+        #Используем генератор get_long_clues и превращаем его в список для вывода
+        long_clues = list(mansion.get_long_clues(mansion.clues))
+        print(f"Улики длиннее 5 символов: {long_clues}")
+    elif user_input == "format clues":
+        #Используем генератор format_clues
+        formatted = list(mansion.format_clues(mansion.clues))
+        print(f"Отформатированные улики: {formatted}")
     elif user_input == "exit":
         handle_exit()
-
-    #Любая другая команда
     else:
-        print("Неизвестная команда. Введите 'help'.")
+        print("Неизвестная команда. Введите 'help'")
